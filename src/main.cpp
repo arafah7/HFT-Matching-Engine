@@ -9,17 +9,16 @@
 #include "../include/Ringbuffer.hpp"
 using namespace HFT_ENGINE;
 
-// Define a Variant to handle different command types in the same buffer
-// This is cleaner and faster than a Union
+
 using MarketCommand = std::variant<Order, uint64_t>; 
 
 std::atomic<bool> marketOpen{true};
 
-// --- THE PRODUCER: MARKET SIMULATOR ---
+
 void marketProducer(RingBuffer<MarketCommand, 2048>& buffer) {
     std::cout << "[Producer] Starting Stress Test...\n";
 
-    // 1. STRESS TEST: Add 1000 Buy Orders
+  
     for (uint64_t i = 1; i <= 1000; ++i) {
         buffer.push(Order{i, Side::Buy, 100, 10});
     }
@@ -29,17 +28,16 @@ void marketProducer(RingBuffer<MarketCommand, 2048>& buffer) {
         buffer.push(i); // Push the ID to cancel
     }
 
-    // 3. MATCH TEST: Add one massive Sell Order to clear the remaining 500 Bids
+  
     buffer.push(Order{9999, Side::Sell, 100, 5000});
 
-    // Let the consumer catch up
     while(!buffer.isEmpty()) { std::this_thread::yield(); }
     
     marketOpen = false; 
     std::cout << "[Producer] Stress test signals sent.\n";
 }
 
-// --- THE CONSUMER: MATCHING ENGINE ---
+
 void matchingConsumer(Orderbook& engine, RingBuffer<MarketCommand, 2048>& buffer) {
     std::cout << "[Consumer] Engine processing started...\n";
     
@@ -50,13 +48,13 @@ void matchingConsumer(Orderbook& engine, RingBuffer<MarketCommand, 2048>& buffer
         auto msg = buffer.pop();
         if (msg.has_value()) {
             count++;
-            // Item 42: std::visit is the modern way to handle variants
+          
             std::visit([&](auto&& arg) {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, Order>) {
                     engine.addOrder(std::forward<T>(arg));
                 } else if constexpr (std::is_same_v<T, uint64_t>) {
-                    engine.cancelOrder(arg); // arg is the orderId
+                    engine.cancelOrder(arg); 
                 }
             }, msg.value());
         }
