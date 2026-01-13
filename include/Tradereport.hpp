@@ -3,8 +3,8 @@
 
 namespace HFT_ENGINE{
    struct Tradereport {
-    uint64_t bidId;   // Change from uint32 to uint64
-    uint64_t askId;   // Change from uint32 to uint64
+    uint64_t bidId;   
+    uint64_t askId;   
     uint32_t quantity;
     uint32_t price;
 
